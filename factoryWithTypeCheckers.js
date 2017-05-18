@@ -145,7 +145,7 @@ module.exports = function(isValidElement, throwOnDirectAccess) {
   // Make `instanceof Error` still work for returned errors.
   PropTypeError.prototype = Error.prototype;
 
-  function createChainableTypeChecker(validate) {
+  function createChainableTypeChecker(validate, type, subType) {
     if (process.env.NODE_ENV !== 'production') {
       var manualPropTypeCallCache = {};
       var manualPropTypeWarningCount = 0;
@@ -199,8 +199,16 @@ module.exports = function(isValidElement, throwOnDirectAccess) {
       }
     }
 
+    function getType() {
+      return {
+        type: type,
+        subType: subType
+      }
+    }
+
     var chainedCheckType = checkType.bind(null, false);
     chainedCheckType.isRequired = checkType.bind(null, true);
+    chainedCheckType.getType = getType.bind(null);
 
     return chainedCheckType;
   }
@@ -219,7 +227,7 @@ module.exports = function(isValidElement, throwOnDirectAccess) {
       }
       return null;
     }
-    return createChainableTypeChecker(validate);
+    return createChainableTypeChecker(validate, expectedType);
   }
 
   function createAnyTypeChecker() {
@@ -288,7 +296,7 @@ module.exports = function(isValidElement, throwOnDirectAccess) {
       var valuesString = JSON.stringify(expectedValues);
       return new PropTypeError('Invalid ' + location + ' `' + propFullName + '` of value `' + propValue + '` ' + ('supplied to `' + componentName + '`, expected one of ' + valuesString + '.'));
     }
-    return createChainableTypeChecker(validate);
+    return createChainableTypeChecker(validate, 'enum', expectedValues);
   }
 
   function createObjectOfTypeChecker(typeChecker) {
@@ -344,7 +352,7 @@ module.exports = function(isValidElement, throwOnDirectAccess) {
 
       return new PropTypeError('Invalid ' + location + ' `' + propFullName + '` supplied to ' + ('`' + componentName + '`.'));
     }
-    return createChainableTypeChecker(validate);
+    return createChainableTypeChecker(validate, 'union', arrayOfTypeCheckers);
   }
 
   function createNodeChecker() {
